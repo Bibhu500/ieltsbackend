@@ -13,7 +13,7 @@
     "react-router-dom": "^6.22.3"
   },
   "scripts": {
-    "start": "concurrently \"npm run server\" \"npm run client\"",
+    "start": "node index.js",
     "server": "node index.js",
     "client": "npm run dev"
   },
