@@ -1,7 +1,7 @@
 import asyncHandler from "express-async-handler";
 import Vocabulary from "../models/vocabularyModel.js";
 
-const save = asyncHandler(async (req, res) => {
+const save = asyncHandler(async (req, res, next) => {
   const data = req.body;
   try {
     let vocabulary = await Vocabulary.findOne({ user_id: req.user.uid });
@@ -20,11 +20,11 @@ const save = asyncHandler(async (req, res) => {
       data: "saved"
     });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    next(e);
   }
 });
 
-const getVocabularyList = asyncHandler(async (req, res) => {
+const getVocabularyList = asyncHandler(async (req, res, next) => {
     try {
         let vocabulary = await Vocabulary.findOne({ user_id: req.user.uid });
         if(vocabulary){
@@ -37,9 +37,7 @@ const getVocabularyList = asyncHandler(async (req, res) => {
             });
         }
     } catch (e) {
-      res.status(404);
-      var errorMessage = e.message;
-      throw new Error(errorMessage);
+      next(e);
     }
 });
 

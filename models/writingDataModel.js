@@ -16,3 +16,6 @@ const WritingDataSchema = mongoose.Schema(
 const WritingData = mongoose.model("WritingData", WritingDataSchema);
 
 export {WritingData};
+
+
+

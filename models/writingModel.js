@@ -12,6 +12,7 @@ const WritingSchema = mongoose.Schema(
     type: {type: String, required: true},
     editor_id: {type: String},
     share_id: {type: String, required: true},
+    remarks: {type: Array},
   },
   {
     timestamps: true,
@@ -21,3 +22,4 @@ const WritingSchema = mongoose.Schema(
 const Writing = mongoose.model("Writing", WritingSchema);
 
 export {Writing};
+

@@ -1,7 +1,7 @@
 import asyncHandler from "express-async-handler";
 import { combinedTest } from "../models/combinedTestModel";
 
-const saveResults = asyncHandler(async (req, res) => {
+const saveResults = asyncHandler(async (req, res, next) => {
     const { data } = req.body;
     try {
         console.log(data);
@@ -18,9 +18,7 @@ const saveResults = asyncHandler(async (req, res) => {
             data: combined
           });
     } catch (e) {
-      res.status(404);
-      var errorMessage = e.message;
-      throw new Error(errorMessage);
+      next(e);
     }
   });
 

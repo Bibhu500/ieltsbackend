@@ -1,78 +1,88 @@
+//contollers/userconstroller.js
 import User from "../models/userModel.js";
 import asyncHandler from "express-async-handler";
 import jwt from 'jsonwebtoken';
 
-import admin from "firebase-admin";
 import auth from "../config/firebase=admin.js";
+import Teacher from "../models/teacherModel.js";
 
-const authUser = asyncHandler(async (req, res) => {
-    const { idToken } = req.body;
-    try {
-      
-      const decodedToken = await auth.verifyIdToken(idToken);
-      const uid = decodedToken.uid;  
-      const accessToken = jwt.sign({ uid }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '7d' });
-      const refreshToken = jwt.sign({ uid }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
+const authUser = asyncHandler(async (req, res, next) => {
+  const { idToken } = req.body;
+  try {
+    console.log(idToken);
+    const decodedToken = await auth.verifyIdToken(idToken);
+    const uid = decodedToken.uid;
 
-      console.log("Access Token" + accessToken);
-      console.log("Refresh Token" + refreshToken);
-      res.json({ accessToken, refreshToken });
-
-    } catch (e) {
-      res.status(404);
-      var errorMessage = e.message;
-      throw new Error(errorMessage);
-    }
-  });
-
-  const registerUser = asyncHandler(async (req, res) => {
-    console.log("Hello world");
-    const { fullName, email, firebaseId } = req.body;
-  
-    console.log(fullName, email, firebaseId);
-  
-    const userExists = await User.findOne({ email });
+    // Find the user in your database
+    const user = await User.findOne({ firebaseId: uid });
     
-    if (userExists) {
-      res.status(400);
-      throw new Error("User already exists.");
+    if (!user) {
+      return res.status(404).json({ message: "User not found in database" });
     }
+
+    const accessToken = jwt.sign({ uid: user.firebaseId }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '7d' });
+    const refreshToken = jwt.sign({ uid: user.firebaseId }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
+
+    console.log("Access Token: " + accessToken);
+    console.log("Refresh Token: " + refreshToken);
+    res.json({ accessToken, refreshToken });
+  } catch (e) {
+    next(e);
+  }
+});
+
+  const registerUser = asyncHandler(async (req, res, next) => {
+    try {
+      const { fullName, email, firebaseId, role } = req.body;
+      console.log('Received signup data:', { fullName, email, firebaseId, role });
   
-    const user = await User.create({
-      fullName,
-      email,
-      firebaseId
-    });
-  
-    if (user) {
-      res.status(201).json({
-        _id: user._id,
-        fullName: user.fullName,
-        email: user.email,
-        firebaseId: user.firebaseId
+      const userExists = await User.findOne({ email });
+      
+      if (userExists) {
+        res.status(400);
+        throw new Error("User already exists.");
+      }
+      
+      const user = await User.create({
+        fullName,
+        email,
+        firebaseId,
+        role: role || 'student' // Provide a default value
       });
-    } else {
-      res.status(400);
-      throw new Error("Invalid user data");
+      console.log('User created in database:', user);
+      
+      if (user) {
+        res.status(201).json(user);
+      } else {
+        res.status(400);
+        throw new Error("Invalid user data");
+      }
+    } catch (err) {
+      console.error('Error in registerUser:', err);
+      next(err);
     }
   });
   
-  const refreshToken = asyncHandler(async (req, res) => {
-    const { refreshToken } = req.body;
-    if (refreshToken) {
-      jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
-        if (err) {
-          return res.status(403).json({ error: 'Invalid refresh token' });
-        }
-        const accessToken = jwt.sign({ uid: user.uid }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m' });
-        res.json({ accessToken });
-      });
-    } else {
-      res.status(401).json({ error: 'No refresh token provided' });
+  const refreshToken = asyncHandler(async (req, res, next) => {
+    try{
+      const { refreshToken } = req.body;
+      if (refreshToken) {
+        jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
+          if (err) {
+            return res.status(403).json({ error: 'Invalid refresh token' });
+          }
+          const accessToken = jwt.sign({ uid: user.uid }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m' });
+          res.json({ accessToken });
+        });
+      } else {
+        res.status(401).json({ error: 'No refresh token provided' });
+      }
+    } catch ( err ){
+      next(err);
     }
   });
 
-  const signoutUser = asyncHandler(async (req, res) => {
+  const signoutUser = asyncHandler(async (req, res, next) => {
     try {
       // 1. Verify the access token
       const { authorization } = req.headers;
@@ -89,21 +99,26 @@ const authUser = asyncHandler(async (req, res) => {
   
       res.json({ message: 'User signed out successfully' });
     } catch (error) {
-      res.status(500).json({ error: 'Failed to sign out user' });
+      next(err);
     }
   });
 
-  const verifyUser = asyncHandler(async (req, res) => {
-    const { token } = req.body;
-    if (token) {
-      jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
-        if (err) {
-          return res.status(403).json({ error: 'Invalid access token', "valid": false });
-        }
-        res.json({"valid": true});
-      });
-    } else {
-      res.status(401).json({ error: 'No access token provided'});
+  const verifyUser = asyncHandler(async (req, res, next) => {
+    try{
+
+      const { token } = req.body;
+      if (token) {
+        jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
+          if (err) {
+            return res.status(403).json({ error: 'Invalid access token', "valid": false });
+          }
+          res.json({"valid": true});
+        });
+      } else {
+        res.status(401).json({ error: 'No access token provided'});
+      }
+    } catch (err) {
+      next(err);
     }
   });
 

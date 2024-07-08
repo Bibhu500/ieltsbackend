@@ -1,29 +1,37 @@
+//authmiddleware.jsx
 import jwt from "jsonwebtoken";
+import User from "../models/userModel.js";
 
-const verifyToken = (req, res, next) => {
-  const authHeader = req.headers.authorization;  
-  
+const verifyToken = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
   if (authHeader) {
     const token = authHeader.split(' ')[1];
-    
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, async (err, user) => {
-      if (err) {
-        if (err.name === 'TokenExpiredError') {
-          // Access token has expired
-          console.log("Here");
-          
-          return res.status(401).json({ error: 'Access token expired', needsRefresh: true });
-        } else {
-          // Token is invalid
-          console.log("Hello world")
-          return res.status(403).json({ error: 'Invalid token' });
-        }
-      }
+
+    try {
+      const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
       
-      req.user = user;
-      console.log("Working...")
+      // Fetch the user from the database using the Firebase UID
+      const user = await User.findOne({ firebaseId: decoded.uid });
+
+      if (!user) {
+        console.log('User not found in database');
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // Attach the full user object to the request
+      req.user = user.toObject();
+      req.user.uid = user.firebaseId;  // Ensure uid is set correctly
+      console.log('User authenticated:', req.user.uid);
       next();
-    });
+    } catch (err) {
+      console.error('Token verification error:', err);
+      if (err.name === 'TokenExpiredError') {
+        return res.status(401).json({ error: 'Access token expired', needsRefresh: true });
+      } else {
+        return res.status(403).json({ error: 'Invalid token' });
+      }
+    }
   } else {
     res.status(401).json({ error: 'No token provided' });
   }

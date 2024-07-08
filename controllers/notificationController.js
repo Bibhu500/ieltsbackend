@@ -1,9 +1,10 @@
-import { Notification } from "../models/NotificationModel.js";
+import { Notification } from "../models/notificationModel.js";
 import asyncHandler from "express-async-handler";
 import { Writing } from "../models/writingModel.js";
 import User from "../models/userModel.js";
+import Speaking from "../models/speakingModel.js";
 
-const sendRequest = asyncHandler(async (req, res) => {
+const sendRequest = asyncHandler(async (req, res, next) => {
     const data = req.body;
     try {
         const sender_id = req.user.uid;
@@ -20,7 +21,7 @@ const sendRequest = asyncHandler(async (req, res) => {
             result_id
         })
         if(check){
-            res.status(201).json({
+            res.status(409).json({
                 message: "already exists",
                 data: check
               });
@@ -41,13 +42,11 @@ const sendRequest = asyncHandler(async (req, res) => {
             });
         }
     } catch (e) {
-      res.status(404);
-      var errorMessage = e.message;
-      throw new Error(errorMessage);
+      next(e);
     }
   });
 
-  const acceptRequest = asyncHandler(async (req, res) => {
+  const acceptRequest = asyncHandler(async (req, res, next) => {
     const data = req.body.data;
     try {
         console.log(data)
@@ -62,6 +61,8 @@ const sendRequest = asyncHandler(async (req, res) => {
         let result = "";
         if(message_type==="writing"){
             result = await Writing.findOne({ _id: result_id, user_id: receiver_id });
+        }else if(message_type == "speaking"){
+          result = await Speaking.findOne({ _id: result_id, user_id: receiver_id });
         }
         if(!result){
           res.json({"message": "Invalid result"})
@@ -85,13 +86,11 @@ const sendRequest = asyncHandler(async (req, res) => {
         });
 
     } catch (e) {
-      res.status(404);
-      var errorMessage = e.message;
-      throw new Error(errorMessage);
+      next(e);
     }    
   });
 
-  const rejectRequest = asyncHandler(async (req, res) => {
+  const rejectRequest = asyncHandler(async (req, res, next) => {
     const data = req.body.data;
     try {
         const notification_id = data.notification_id;
@@ -117,23 +116,32 @@ const sendRequest = asyncHandler(async (req, res) => {
             data: notification
         });
     } catch (e) {
-      res.status(404);
-      var errorMessage = e.message;
-      throw new Error(errorMessage);
+      next(e);
     }    
   });
 
-  const getAllNotifications = asyncHandler(async (req, res) => {
+  const getAllNotifications = asyncHandler(async (req, res, next) => {
     try {
         const notifications = await Notification.find({
           receiver_id: req.user.uid
         });
         res.status(201).json(notifications);
     } catch (e) {
-      res.status(404);
-      var errorMessage = e.message;
-      throw new Error(errorMessage);
+      next(e);
     } 
   })
 
-export{sendRequest, acceptRequest, rejectRequest, getAllNotifications};
+  const deleteNotification = async (req, res, next) => {
+    const { _id } = req.body;
+    try{
+      const notification = await Notification.findByIdAndDelete(_id);
+      if(req.user.uid !== notification.receiver_id){
+        return res.status(401).json({message: "Unauthorized User"})
+      }
+      res.status(204).json({message: "Successfully Deleted"});
+    } catch (err) {
+      next(err);
+    }
+  }
+
+export{sendRequest, acceptRequest, rejectRequest, getAllNotifications, deleteNotification};
