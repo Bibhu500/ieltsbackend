@@ -19,6 +19,16 @@ jobs:
         run: npm install
       - name: Genrate Deployment Package
         run: zip -r nodejs-app-build.zip .
+      - name: Remove existing EB version
+        run: |
+          aws elasticbeanstalk delete-application-version \
+            --application-name ieltsapp \
+            --version-label ${{ github.sha }} \
+            --delete-source-bundle
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ap-southeast-2
       - name: Deploy to EB
         uses: einaregilsson/beanstalk-deploy@v21
         with:
