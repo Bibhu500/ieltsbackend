@@ -1,4 +1,4 @@
-import TeacherReview from "../models/TeacherReviewModel.js";
+import TeacherReview from "../models/teacherReviewModel.js";
 import ListeningSaved from "../models/listeningSavedModel.js";
 import ReadingSaved from "../models/readingSavedModel.js";
 import Speaking from "../models/speakingModel.js";
