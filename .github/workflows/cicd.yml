@@ -7,28 +7,26 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: [ ubuntu-latest ]
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
+
       - name: Install Dependencies
-        run: npm install
-      - name: Genrate Deployment Package
-        run: zip -r nodejs-app-build.zip .
-      - name: Remove existing EB version
-        run: |
-          aws elasticbeanstalk delete-application-version \
-            --application-name ieltsapp \
-            --version-label ${{ github.sha }} \
-            --delete-source-bundle
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: ap-southeast-2
+        run: npm ci
+
+      - name: Generate Deployment Package
+        run: zip -r nodejs-app-build.zip . -x "*.git*"
+
+      - name: Generate Unique Version Label
+        id: version-label
+        run: echo "version=$(date +'%Y%m%d%H%M%S')-${GITHUB_SHA::8}" >> $GITHUB_OUTPUT
+
       - name: Deploy to EB
         uses: einaregilsson/beanstalk-deploy@v21
         with:
@@ -36,6 +34,9 @@ jobs:
           aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           application_name: 'ieltsapp'
           environment_name: 'ieltsapp-env'
-          version_label: ${{ github.sha }}
+          version_label: ${{ steps.version-label.outputs.version }}
           region: ap-southeast-2
           deployment_package: nodejs-app-build.zip
+          use_existing_version_if_available: false
+          wait_for_deployment: true
+          wait_for_environment_recovery: 60
