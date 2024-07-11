@@ -61,11 +61,13 @@ export const getTestSet = asyncHandler(async (req, res, next) => {
 
 // Saving results
 // In ReadingController.js
+// In ReadingController.js
+
 export const saveReadingResult = asyncHandler(async (req, res, next) => {
   console.log('Received request body:', req.body);
   console.log('User object:', req.user);
 
-  const { readingSetId, overallBand, totalCorrect, totalQuestions, answers } = req.body;
+  const { readingSetId, readingSetNumber, overallBand, totalCorrect, totalQuestions, answers } = req.body;
   
   if (!req.user || !req.user.uid) {
     console.log('User not authenticated. req.user:', req.user);
@@ -78,7 +80,8 @@ export const saveReadingResult = asyncHandler(async (req, res, next) => {
     console.log('Creating new IELTSReadingResult');
     const newResult = new IELTSReadingResult({
       user_id,
-      readingSetId,
+      readingSetId, // This is the MongoDB _id of the reading set
+      readingSetNumber, // This is the setId from the Reading model
       overallBand,
       totalCorrect,
       totalQuestions,
@@ -99,7 +102,6 @@ export const saveReadingResult = asyncHandler(async (req, res, next) => {
   }
 });
 
-
 export const getReadingResult = asyncHandler(async (req, res, next) => {
   const { resultId } = req.params;
   try {
@@ -114,7 +116,7 @@ export const getReadingResult = asyncHandler(async (req, res, next) => {
 });
 
 export const getSavedResults = asyncHandler(async (req, res, next) => {
-  const { id } = req.body.data;
+  const { id } = req.body;
   console.log('Received ID:', id);
   try {
     const readingResult = await IELTSReadingResult.findById(id);
@@ -124,7 +126,7 @@ export const getSavedResults = asyncHandler(async (req, res, next) => {
       return res.status(404).json({ message: 'Reading result not found' });
     }
 
-    const readingSet = await Reading.findOne({ setId: readingResult.readingSetId });
+    const readingSet = await Reading.findById(readingResult.readingSetId);
     console.log('Reading Set:', readingSet);
     if (!readingSet) {
       console.log('Reading set not found');

@@ -8,6 +8,11 @@ const IELTSReadingResultSchema = new mongoose.Schema({
     required: true
   },
   readingSetId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Reading',
+    required: true
+  },
+  readingSetNumber: {
     type: String,
     required: true
   },
