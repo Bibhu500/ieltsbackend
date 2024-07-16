@@ -2,8 +2,6 @@
  
  import Reading from "../models/ReadingModel.js";
 import IELTSReadingResult from "../models/IELTSReadingResultModel.js";
-import User from '../models/userModel.js';
-
 import ReadingSaved from "../models/readingSavedModel.js";
 import asyncHandler from "express-async-handler";
 import { v4 as uuidv4 } from 'uuid';

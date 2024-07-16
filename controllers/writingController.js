@@ -78,10 +78,10 @@ const saveResults = asyncHandler(async (req, res, next) => {
   }
 });
 
- const getSavedWritingResults = asyncHandler(async (req, res, next) => {
-  const { data } = req.body;
+const getSavedWritingResults = asyncHandler(async (req, res, next) => {
+  const { id } = req.body;
   try {
-    const writingResult = await Writing.findById(data.id);
+    const writingResult = await Writing.findById(id);
     if (!writingResult) {
       return res.status(404).json({ message: 'Writing result not found' });
     }
@@ -92,7 +92,6 @@ const saveResults = asyncHandler(async (req, res, next) => {
     res.status(500).json({ message: 'Internal server error', error: e.message });
   }
 });
-
 
   const getSharedResults = asyncHandler(async (req, res, next) => {
     const { shareId } = req.params;

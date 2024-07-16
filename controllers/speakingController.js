@@ -27,9 +27,9 @@ const saveResults = asyncHandler(async (req, res, next) => {
   });
 
   const getSavedSpeakingResults = asyncHandler(async (req, res, next) => {
-    const { data } = req.body;
+    const { id } = req.body;
     try {
-      const speakingResult = await Speaking.findById(data.id);
+      const speakingResult = await Speaking.findById(id);
       if (!speakingResult) {
         return res.status(404).json({ message: 'Speaking result not found' });
       }

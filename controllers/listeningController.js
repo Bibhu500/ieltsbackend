@@ -55,9 +55,9 @@ const saveResults = asyncHandler(async (req, res, next) => {
   });
 
  const getSavedListeningResults = asyncHandler(async (req, res, next) => {
-    const { data } = req.body;
+    const { id } = req.body;
     try {
-      const listeningResult = await ListeningSaved.findById(data.id);
+      const listeningResult = await ListeningSaved.findById(id);
       if (!listeningResult) {
         return res.status(404).json({ message: 'Listening result not found' });
       }
