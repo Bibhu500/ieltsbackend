@@ -100,6 +100,31 @@ export const saveReadingResult = asyncHandler(async (req, res, next) => {
   }
 });
 
+export const getNextTest = asyncHandler(async (req, res, next) => {
+  const { testType } = req.query;
+  const userId = req.user.uid;
+
+  try {
+    // Get all completed tests for this user
+    const completedTests = await IELTSReadingResult.find({ user_id: userId });
+    const completedTestIds = completedTests.map(test => test.readingSetId.toString());
+
+    // Find the next available test of the specified type
+    const nextTest = await Reading.findOne({
+      setType: testType,
+      _id: { $nin: completedTestIds }
+    }).sort({ setId: 1 });
+
+    if (!nextTest) {
+      return res.status(404).json({ message: 'No more tests available' });
+    }
+
+    res.status(200).json(nextTest);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch next test', error });
+  }
+});
+
 export const getReadingResult = asyncHandler(async (req, res, next) => {
   const { resultId } = req.params;
   try {

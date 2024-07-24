@@ -31,7 +31,7 @@ const SectionSchema = new mongoose.Schema({
 const ReadingSchema = new mongoose.Schema(
     {
         setId: { type: String, required: true },
-        setType: { type: String, required: true },
+        setType: { type: String, enum: ['general', 'academic'], required: true},
         sections: { type: [SectionSchema], required: true }
     },
     {
