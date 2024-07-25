@@ -64,6 +64,7 @@ export const getTestSet = asyncHandler(async (req, res, next) => {
 export const saveReadingResult = asyncHandler(async (req, res, next) => {
   console.log('Received request body:', req.body);
   console.log('User object:', req.user);
+  console.log('Reading Set ID:', req.body.readingSetId); // Add this line
 
   const { readingSetId, readingSetNumber, overallBand, totalCorrect, totalQuestions, answers } = req.body;
   
