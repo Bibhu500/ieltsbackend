@@ -9,24 +9,32 @@ import Teacher from "../models/teacherModel.js";
 const authUser = asyncHandler(async (req, res, next) => {
   const { idToken } = req.body;
   try {
-    console.log(idToken);
+    console.log('Received idToken:', idToken);
     const decodedToken = await auth.verifyIdToken(idToken);
+    console.log('Decoded token:', decodedToken);
     const uid = decodedToken.uid;
 
-    // Find the user in your database
-    const user = await User.findOne({ firebaseId: uid });
-    
+    let user = await User.findOne({ firebaseId: uid });
+    console.log('Found user:', user);
+
     if (!user) {
-      return res.status(404).json({ message: "User not found in database" });
+      console.log('Creating new user');
+      user = await User.create({
+        fullName: decodedToken.name,
+        email: decodedToken.email,
+        firebaseId: uid,
+        role: 'student'
+      });
+      console.log('New user created:', user);
     }
 
     const accessToken = jwt.sign({ uid: user.firebaseId }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '7d' });
     const refreshToken = jwt.sign({ uid: user.firebaseId }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
-
-    console.log("Access Token: " + accessToken);
-    console.log("Refresh Token: " + refreshToken);
+    
+    console.log('Tokens generated');
     res.json({ accessToken, refreshToken });
   } catch (e) {
+    console.error('Error in authUser:', e);
     next(e);
   }
 });
