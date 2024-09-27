@@ -1,10 +1,18 @@
-import express from "express";
+//server/routes/listeningRoutes.js
 
-import { saveResults, getListeningData, getSavedListeningResults} from "../controllers/listeningController.js"
+import express from "express";
+import {
+  getListeningTest,
+  saveListeningResult,getListeningResult,saveListeningSet
+} from "../controllers/listeningController.js";
 import { verifyToken } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
-router.route("/").get(verifyToken, getListeningData)
-router.route("/saveresult").post(verifyToken, saveResults);
-router.route("/fetch-saved").post(verifyToken, getSavedListeningResults);
+
+router.route("/get-test").get(verifyToken, getListeningTest);
+router.route("/save-result").post(verifyToken, saveListeningResult);
+router.route("/result/:resultId").get(verifyToken, getListeningResult);
+router.post("/save-set", verifyToken, saveListeningSet);
+
+
 export default router;

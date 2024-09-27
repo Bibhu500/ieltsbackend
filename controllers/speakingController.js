@@ -5,26 +5,24 @@ import jwt from "jsonwebtoken";
 import User from "../models/userModel.js";
 
 const saveResults = asyncHandler(async (req, res, next) => {
-    const { data } = req.body;
-    try {
-        const share_id = uuidv4();
-        console.log(share_id);
-        console.log("Hello world")
-        const speaking = await Speaking.create({
-            user_id: req.user.uid,
-            allQuestionsAndAnswers: data.allQuestionsAndAnswers,
-            result: data.result,
-            share_id,
-        });
-        console.log(speaking);
-        res.status(201).json({
-            message: "saved",
-            data: speaking
-          });
-    } catch (e) {
-      next(e);
-    }
-  });
+  const { data } = req.body;
+  try {
+    const share_id = uuidv4();
+    console.log(share_id);
+    console.log("Hello world")
+    const speaking = await Speaking.create({
+      user_id: req.user.uid,
+      allQuestionsAndAnswers: data.allQuestionsAndAnswers,
+      result: data.result,
+      overallBand: data.result.ieltsInfo.overallBand, // Add this line
+      share_id,
+    });
+    console.log("the speaking data is coming");
+    res.status(201).json({ message: "saved", data: speaking });
+  } catch (e) {
+    next(e);
+  }
+});
 
   const getSavedSpeakingResults = asyncHandler(async (req, res, next) => {
     const { id } = req.body;
@@ -98,7 +96,7 @@ const saveResults = asyncHandler(async (req, res, next) => {
         return res.status(401).json({message: "you are not an editor"})
       }
 
-      console.log(speaking)
+      console.log(" your speaking data are coming to the profile")
 
       speaking.remarks = remarks; 
       speaking.save();

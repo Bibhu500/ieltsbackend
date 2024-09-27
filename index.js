@@ -1,5 +1,4 @@
 //server.js
-
 import express from "express";
 import dotenv from "dotenv";
 import connectDB from "./config/db.js";
@@ -8,6 +7,7 @@ import speakingRoutes from "./router/speakingRoutes.js"
 import writingRoutes from "./router/writingRoutes.js"
 import profileRoutes from "./router/profileRoutes.js"
 import listeningRoutes from "./router/listeningRoutes.js"
+
 import ReadingRoutes from "./router/ReadingRoutes.js";
 import vocabularyRoutes from "./router/vocabularyRoutes.js"
 import teacherRoutes from "./router/teacherRoutes.js";
@@ -35,7 +35,6 @@ app.use(helmet());
 app.get("/", (req, res) => {
   res.send(`Hello World`);
 });
-
 app.use("/api/users", userRoutes);
 app.use("/api/speaking", speakingRoutes);
 

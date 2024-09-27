@@ -1,3 +1,5 @@
+//writingModel.js
+
 import mongoose from "mongoose";
 
 const WritingSchema = mongoose.Schema(

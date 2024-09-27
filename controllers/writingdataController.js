@@ -1,3 +1,5 @@
+//writingdataController.js
+
 import { WritingData } from '../models/writingDataModel.js';
 
 export const createWritingData = async (req, res) => {

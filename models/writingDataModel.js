@@ -1,3 +1,4 @@
+//writingDataModel.js
 import mongoose from "mongoose";
 
 const WritingDataSchema = mongoose.Schema(

@@ -3,8 +3,10 @@
 import asyncHandler from "express-async-handler";
 import Speaking from "../models/speakingModel.js";
 import { Writing } from "../models/writingModel.js";
-import ListeningSaved from "../models/listeningSavedModel.js";
 import IELTSReadingResult from "../models/IELTSReadingResultModel.js";
+import { ListeningSaved } from "../models/listeningModels.js"; // Add this import
+import Profile from "../models/profileModel.js";
+
 
 const fetchResults = asyncHandler(async (req, res, next) => {
   try {
@@ -16,12 +18,9 @@ const fetchResults = asyncHandler(async (req, res, next) => {
     const reading_data = await IELTSReadingResult.find({user_id: uid});
     const listening_data = await ListeningSaved.find({user_id: uid});
 
-    console.log('Data counts:', {
-      speaking: speaking_data.length,
-      writing: writing_data.length,
-      reading: reading_data.length,
-      listening: listening_data.length
-    });
+    console.log('Raw speaking data in json');
+
+  
 
     if (speaking_data.length === 0 && writing_data.length === 0 && reading_data.length === 0 && listening_data.length === 0) {
       console.log('No data found for user:', uid);
@@ -30,14 +29,9 @@ const fetchResults = asyncHandler(async (req, res, next) => {
 
     const data = {
       "speaking": {
-        overallBand: speaking_data.map(d => d.result?.ieltsinfo?.overallBand || 0),
+        overallBand: speaking_data.map(d => d.result?.ieltsInfo?.overallBand || 0),
         time: speaking_data.map(d => d.createdAt),
         id: speaking_data.map(d => d._id)
-      },
-      "listening": {
-        overallBand: listening_data.map(d => d.result?.score || 0),
-        time: listening_data.map(d => d.createdAt),
-        id: listening_data.map(d => d._id)
       },
       "reading": {
         overallBand: reading_data.map(d => d.overallBand || 0),
@@ -49,16 +43,19 @@ const fetchResults = asyncHandler(async (req, res, next) => {
         time: writing_data.map(d => d.createdAt),
         id: writing_data.map(d => d._id)
       },
+      "listening": {
+        overallBand: listening_data.map(d => d.overallBand || 0),
+        time: listening_data.map(d => d.createdAt),
+        id: listening_data.map(d => d._id)
+      },
     };
 
-    console.log('Fetched data:', JSON.stringify(data, null, 2));
     res.json(data);
   } catch (e) {
     console.error('Error in fetchResults:', e);
     next(e);
   }
 });
-
   const getProfile = async (req, res, next) => {
     try {
       // Log the entire req.user object for debugging
@@ -79,5 +76,5 @@ const fetchResults = asyncHandler(async (req, res, next) => {
     }
   };
 
-export{fetchResults, getProfile};
+  export { fetchResults, getProfile};
 

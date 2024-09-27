@@ -2,10 +2,7 @@
 import User from "../models/userModel.js";
 import asyncHandler from "express-async-handler";
 import jwt from 'jsonwebtoken';
-
 import auth from "../config/firebase=admin.js";
-import Teacher from "../models/teacherModel.js";
-
 const authUser = asyncHandler(async (req, res, next) => {
   const { idToken } = req.body;
   try {
@@ -42,7 +39,7 @@ const authUser = asyncHandler(async (req, res, next) => {
   const registerUser = asyncHandler(async (req, res, next) => {
     try {
       const { fullName, email, firebaseId, role } = req.body;
-      console.log('Received signup data:', { fullName, email, firebaseId, role });
+      console.log('Received signup data:');
   
       const userExists = await User.findOne({ email });
       
@@ -79,7 +76,7 @@ const authUser = asyncHandler(async (req, res, next) => {
           if (err) {
             return res.status(403).json({ error: 'Invalid refresh token' });
           }
-          const accessToken = jwt.sign({ uid: user.uid }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m' });
+          const accessToken = jwt.sign({ uid: user.uid }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '7d' });
           res.json({ accessToken });
         });
       } else {
@@ -132,30 +129,3 @@ const authUser = asyncHandler(async (req, res, next) => {
 
 export{authUser, registerUser, refreshToken,signoutUser, verifyUser};
 
-
-
-//old authuser before google login.
-// const authUser = asyncHandler(async (req, res, next) => {
-//   const { idToken } = req.body;
-//   try {
-//     console.log(idToken);
-//     const decodedToken = await auth.verifyIdToken(idToken);
-//     const uid = decodedToken.uid;
-
-//     // Find the user in your database
-//     const user = await User.findOne({ firebaseId: uid });
-    
-//     if (!user) {
-//       return res.status(404).json({ message: "User not found in database" });
-//     }
-
-//     const accessToken = jwt.sign({ uid: user.firebaseId }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '7d' });
-//     const refreshToken = jwt.sign({ uid: user.firebaseId }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
-
-//     console.log("Access Token: " + accessToken);
-//     console.log("Refresh Token: " + refreshToken);
-//     res.json({ accessToken, refreshToken });
-//   } catch (e) {
-//     next(e);
-//   }
-// });

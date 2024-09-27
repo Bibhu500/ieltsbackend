@@ -1,3 +1,4 @@
+//wrtinigcontroller.js
 import  {Writing} from "../models/writingModel.js";
 import { WritingData } from "../models/writingDataModel.js";
 import asyncHandler from "express-async-handler";

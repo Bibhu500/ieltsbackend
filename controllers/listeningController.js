@@ -1,72 +1,105 @@
-import Listening from "../models/listeningModel.js";
-import ListeningSaved from "../models/listeningSavedModel.js";
+import { ListeningSet, ListeningSaved } from "../models/listeningModels.js";
 import asyncHandler from "express-async-handler";
 
-const getListeningData = asyncHandler(async (req, res, next) => {
-  const { type } = req.body;
+export const getListeningTest = asyncHandler(async (req, res, next) => {
+  const userId = req.user.uid;
+
   try {
-      const lastTest = await ListeningSaved.aggregate([
-        {
-          $match: {
-            user_id: req.user.uid, // Replace with the desired user_id
-            type: type,          
-          }
-        },
-        {
-          $sort: {
-            createdAt: -1 // Sort in descending order of createdAt
-          }
-        },
-        {
-          $limit: 1 // Get only the first document (the most recent one)
-        }
-      ])
-      const prev_qno = lastTest[0]?lastTest[0].question_number:-1;
-      const count = await Listening.countDocuments();
-      if(count == 0){
-        return res.status(404).json({"message": "no available questions"});
-      }else{
-        const listening = await Listening.findOne({ "question_number": (prev_qno+1)%count });
-        res.status(201).json(listening);
-      }
-  } catch (e) {
-    next(e);
-  }    
+    // Get all completed tests for this user
+    const completedTests = await ListeningSaved.find({ user_id: userId });
+    const completedSetNumbers = completedTests.map(test => test.setId);
+
+    // Find all available test sets
+    const allTestSets = await ListeningSet.find().sort({ setNumber: 1 });
+
+    // Find the next available test
+    let nextTest = allTestSets.find(test => !completedSetNumbers.includes(test.setNumber));
+
+    // If all tests have been completed, start over
+    if (!nextTest && allTestSets.length > 0) {
+      nextTest = allTestSets[0];
+    }
+
+    if (!nextTest) {
+      return res.status(404).json({ message: 'No tests available' });
+    }
+
+    res.status(200).json(nextTest);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch next test', error: error.message });
+  }
 });
 
+export const saveListeningResult = asyncHandler(async (req, res, next) => {
+  const { listeningSetId, setNumber, overallBand, totalCorrect, totalQuestions, answers, mp3Link, pdfLink } = req.body;
+  const user_id = req.user.uid;
 
-const saveResults = asyncHandler(async (req, res, next) => {
-    const data = req.body;
-    try {
-        const listening = await ListeningSaved.create({
-            user_id: req.user.uid,
-            question_number: data.question_number,
-            allQuestionsAndAnswers: data.allQuestionsAndAnswers,
-            results: data.results
-        });
+  console.log('Received data:', JSON.stringify(req.body, null, 2));
 
-        res.status(201).json({
-            message: "saved",
-            data: listening
-          });
-    } catch (e) {
-      next(e);
+  try {
+    if (!setNumber) {
+      throw new Error('setNumber is required');
     }
-  });
 
- const getSavedListeningResults = asyncHandler(async (req, res, next) => {
-    const { id } = req.body;
-    try {
-      const listeningResult = await ListeningSaved.findById(id);
-      if (!listeningResult) {
-        return res.status(404).json({ message: 'Listening result not found' });
-      }
-  
-      res.status(200).json(listeningResult);
-    } catch (e) {
-      console.error('Error in getSavedListeningResults:', e);
-      res.status(500).json({ message: 'Internal server error', error: e.message });
+    const newResult = new ListeningSaved({
+      user_id,
+      setId: setNumber,
+      listeningSetId,
+      overallBand: Number(overallBand),
+      totalCorrect: Number(totalCorrect),
+      totalQuestions: Number(totalQuestions),
+      answers,
+      mp3Link,
+      pdfLink
+    });
+
+    console.log('New result object:', JSON.stringify(newResult.toObject(), null, 2));
+
+    const savedResult = await newResult.save();
+    console.log('Saved result:', JSON.stringify(savedResult.toObject(), null, 2));
+    res.status(201).json({ message: 'Listening result saved successfully', data: savedResult });
+  } catch (error) {
+    console.error('Error saving listening result:', error);
+    res.status(500).json({ 
+      message: 'Failed to save listening result',
+      error: error.message
+    });
+  }
+});
+
+export const getListeningResult = asyncHandler(async (req, res, next) => {
+  const { resultId } = req.params;
+  try {
+    const result = await ListeningSaved.findById(resultId).lean();
+    if (!result) {
+      return res.status(404).json({ message: 'Result not found' });
     }
-  });
+    
+    console.log('Fetched result:', JSON.stringify(result, null, 2));
+    res.status(200).json(result);
+  } catch (error) {
+    console.error('Error in getListeningResult:', error);
+    res.status(500).json({ message: 'Failed to fetch listening result', error: error.message });
+  }
+});
 
-export{saveResults, getListeningData, getSavedListeningResults};
+export const saveListeningSet = asyncHandler(async (req, res, next) => {
+  const { setNumber, mp3Link, pdfLink, answers } = req.body;
+  try {
+    const listeningSet = await ListeningSet.create({
+      setNumber,
+      mp3Link,
+      pdfLink,
+      answers,
+      user_id: req.user.uid,
+    });
+
+    res.status(201).json({
+      message: "Listening set saved successfully",
+      data: listeningSet,
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
