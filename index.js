@@ -7,6 +7,7 @@ import speakingRoutes from "./router/speakingRoutes.js"
 import writingRoutes from "./router/writingRoutes.js"
 import profileRoutes from "./router/profileRoutes.js"
 import listeningRoutes from "./router/listeningRoutes.js"
+import meme from "./router/cardMemeRoutes.js";
 
 import ReadingRoutes from "./router/ReadingRoutes.js";
 import vocabularyRoutes from "./router/vocabularyRoutes.js"
@@ -37,6 +38,7 @@ app.get("/", (req, res) => {
 });
 app.use("/api/users", userRoutes);
 app.use("/api/speaking", speakingRoutes);
+app.use("/api/meme",meme)
 
 app.use("/api/writing", writingRoutes);
 app.use("/api/listening", listeningRoutes);
