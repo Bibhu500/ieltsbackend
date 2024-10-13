@@ -4,40 +4,76 @@ import { v4 as uuidv4 } from 'uuid';
 import jwt from "jsonwebtoken";
 import User from "../models/userModel.js";
 
+const getSavedSpeakingResults = asyncHandler(async (req, res, next) => {
+  try {
+    const speakingResults = await Speaking.find({ user_id: req.user.uid });
+    if (speakingResults.length === 0) {
+      return res.status(404).json({ message: 'No speaking results found for this user' });
+    }
+    
+    res.status(200).json(speakingResults);
+  } catch (e) {
+    console.error('Error in getSavedSpeakingResults:', e);
+    res.status(500).json({ message: 'Internal server error', error: e.message });
+  }
+});
+
+
+const getSavedSpeakingResult = asyncHandler(async (req, res, next) => {
+  try {
+    const { id } = req.body;
+    const speakingResult = await Speaking.findById(id);
+    
+    if (!speakingResult) {
+      return res.status(404).json({ message: 'Speaking result not found' });
+    }
+    
+    res.status(200).json(speakingResult);
+  } catch (e) {
+    console.error('Error in getSavedSpeakingResult:', e);
+    res.status(500).json({ message: 'Internal server error', error: e.message });
+  }
+});
+
 const saveResults = asyncHandler(async (req, res, next) => {
   const { data } = req.body;
   try {
+    // Get user information
+    const user = await User.findOne({ firebaseId: req.user.uid });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check if user is a student and has exceeded the free test limit
+    if (user.role === 'student') {
+      const testCount = await Speaking.countDocuments({ user_id: req.user.uid });
+      if (testCount >= 2) {
+        return res.status(403).json({ message: "Free test limit exceeded. Please upgrade to premium." });
+      }
+    }
+
     const share_id = uuidv4();
-    console.log(share_id);
-    console.log("Hello world")
+    
+    // Check if data.result exists and has the expected structure
+    if (!data.result || typeof data.result.overallBand === 'undefined') {
+      return res.status(400).json({ message: "Invalid result data structure" });
+    }
+
     const speaking = await Speaking.create({
       user_id: req.user.uid,
       allQuestionsAndAnswers: data.allQuestionsAndAnswers,
       result: data.result,
-      overallBand: data.result.ieltsInfo.overallBand, // Add this line
+      overallBand: data.result.overallBand,
       share_id,
     });
-    console.log("the speaking data is coming");
+
     res.status(201).json({ message: "saved", data: speaking });
   } catch (e) {
-    next(e);
+    console.error('Error in saveResults:', e);
+    res.status(500).json({ message: 'Internal server error', error: e.message });
   }
 });
 
-  const getSavedSpeakingResults = asyncHandler(async (req, res, next) => {
-    const { id } = req.body;
-    try {
-      const speakingResult = await Speaking.findById(id);
-      if (!speakingResult) {
-        return res.status(404).json({ message: 'Speaking result not found' });
-      }
-  
-      res.status(200).json(speakingResult);
-    } catch (e) {
-      console.error('Error in getSavedSpeakingResults:', e);
-      res.status(500).json({ message: 'Internal server error', error: e.message });
-    }
-  });
 
   const getSharedResults = asyncHandler(async (req, res, next) => {
     const { shareId } = req.params;
@@ -108,4 +144,4 @@ const saveResults = asyncHandler(async (req, res, next) => {
   }
 
 
-export{saveResults, getSavedSpeakingResults, getSharedResults, addRemark};
+  export { saveResults, getSavedSpeakingResults, getSharedResults, addRemark, getSavedSpeakingResult };

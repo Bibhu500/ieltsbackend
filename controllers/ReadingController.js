@@ -5,6 +5,7 @@ import IELTSReadingResult from "../models/IELTSReadingResultModel.js";
 import ReadingSaved from "../models/readingSavedModel.js";
 import asyncHandler from "express-async-handler";
 import { v4 as uuidv4 } from 'uuid';
+import mongoose from 'mongoose';
 
 // Adding a reading passage
 export const addReadingSet = asyncHandler(async (req, res, next) => {
@@ -101,31 +102,6 @@ export const saveReadingResult = asyncHandler(async (req, res, next) => {
   }
 });
 
-export const getNextTest = asyncHandler(async (req, res, next) => {
-  const { testType } = req.query;
-  const userId = req.user.uid;
-
-  try {
-    // Get all completed tests for this user
-    const completedTests = await IELTSReadingResult.find({ user_id: userId });
-    const completedTestIds = completedTests.map(test => test.readingSetId.toString());
-
-    // Find the next available test of the specified type
-    const nextTest = await Reading.findOne({
-      setType: testType,
-      _id: { $nin: completedTestIds }
-    }).sort({ setId: 1 });
-
-    if (!nextTest) {
-      return res.status(404).json({ message: 'No more tests available' });
-    }
-
-    res.status(200).json(nextTest);
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch next test', error });
-  }
-});
-
 export const getReadingResult = asyncHandler(async (req, res, next) => {
   const { resultId } = req.params;
   try {
@@ -180,5 +156,56 @@ export const getSharedResults = asyncHandler(async (req, res, next) => {
     }    
 });
 
+export const getNextTest = asyncHandler(async (req, res, next) => {
+  const { testType } = req.query;
+  const userId = req.user.uid;
 
+  try {
+    // Get all completed tests for this user
+    const completedTests = await IELTSReadingResult.find({ user_id: userId });
+    const completedTestIds = completedTests.map(test => test.readingSetId?.toString()).filter(Boolean);
 
+    // Fetch all corresponding Reading documents
+    const readingSets = await Reading.find({ _id: { $in: completedTestIds } });
+
+    // Create a map of readingSetId to setType for quick lookup
+    const readingSetTypes = new Map(readingSets.map(set => [set._id.toString(), set.setType]));
+
+    // Count the number of completed tests for this type
+    const completedCount = completedTests.filter(test => 
+      readingSetTypes.get(test.readingSetId?.toString()) === testType
+    ).length;
+
+    // Check if the user has reached the limit (2 tests) for non-premium users
+    if (req.user.role !== 'premiumstudent' && completedCount >= 2) {
+      return res.status(403).json({ message: 'You have reached the maximum number of free tests for this type.' });
+    }
+
+    // Find the next available test of the specified type
+    const nextTest = await Reading.findOne({
+      setType: testType,
+      _id: { $nin: completedTestIds }
+    }).sort({ setId: 1 });
+
+    if (!nextTest) {
+      return res.status(404).json({ message: 'No more tests available' });
+    }
+
+    res.status(200).json(nextTest);
+  } catch (error) {
+    console.error('Error in getNextTest:', error);
+    res.status(500).json({ message: 'Failed to fetch next test', error: error.message });
+  }
+});
+
+export const getRemainingTests = asyncHandler(async (req, res) => {
+  const userId = req.user.uid;
+  
+  const academicCount = await IELTSReadingResult.countDocuments({ user_id: userId, 'readingSet.setType': 'academic' });
+  const generalCount = await IELTSReadingResult.countDocuments({ user_id: userId, 'readingSet.setType': 'general' });
+
+  res.json({
+    academic: Math.max(0, 2 - academicCount),
+    general: Math.max(0, 2 - generalCount)
+  });
+});

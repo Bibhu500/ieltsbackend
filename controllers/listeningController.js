@@ -1,31 +1,77 @@
 import { ListeningSet, ListeningSaved } from "../models/listeningModels.js";
 import asyncHandler from "express-async-handler";
+import User from "../models/userModel.js";
 
 export const getListeningTest = asyncHandler(async (req, res, next) => {
   const userId = req.user.uid;
 
   try {
-    // Get all completed tests for this user
-    const completedTests = await ListeningSaved.find({ user_id: userId });
-    const completedSetNumbers = completedTests.map(test => test.setId);
+    console.log(`Fetching listening test for user: ${userId}`);
+
+    // Fetch the user from the database
+    const user = await User.findOne({ firebaseId: userId });
+    if (!user) {
+      console.log(`User not found: ${userId}`);
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    console.log(`User details:`, JSON.stringify(user, null, 2));
+    console.log(`User role from database: ${user.role}`);
+
+    const userRole = user.role;
+    let freeTestsLeft = 2;
+    let limitReached = false;
 
     // Find all available test sets
     const allTestSets = await ListeningSet.find().sort({ setNumber: 1 });
+    console.log(`Total available test sets: ${allTestSets.length}`);
+
+    if (allTestSets.length === 0) {
+      console.log('No tests available');
+      return res.status(404).json({ message: 'No tests available' });
+    }
+
+    // Get all completed tests for this user
+    const completedTests = await ListeningSaved.find({ user_id: userId });
+    console.log(`Completed tests: ${completedTests.length}`);
+
+    const completedSetNumbers = completedTests.map(test => test.setId);
+    console.log(`Completed set numbers: ${completedSetNumbers.join(', ')}`);
 
     // Find the next available test
     let nextTest = allTestSets.find(test => !completedSetNumbers.includes(test.setNumber));
 
     // If all tests have been completed, start over
-    if (!nextTest && allTestSets.length > 0) {
+    if (!nextTest) {
       nextTest = allTestSets[0];
     }
 
-    if (!nextTest) {
-      return res.status(404).json({ message: 'No tests available' });
+    console.log(`Next test set number: ${nextTest.setNumber}`);
+
+    if (userRole === 'student') {
+      freeTestsLeft = Math.max(0, 2 - completedTests.length);
+      console.log(`Free tests left for student: ${freeTestsLeft}`);
+      if (freeTestsLeft === 0) {
+        limitReached = true;
+      }
+    } else if (userRole === 'premiumstudent') {
+      freeTestsLeft = -1; // Indicate unlimited tests
+      limitReached = false; // Ensure limitReached is always false for premium students
+      console.log(`Premium student: unlimited tests`);
+    } else {
+      console.log(`Unknown user role: ${userRole}`);
     }
 
-    res.status(200).json(nextTest);
+    console.log(`Sending response - Role: ${userRole}, Free tests left: ${freeTestsLeft}, Limit reached: ${limitReached}`);
+
+    res.status(200).json({
+      testData: nextTest,
+      userRole,
+      freeTestsLeft,
+      limitReached
+    });
   } catch (error) {
+    console.error('Error in getListeningTest:', error);
     res.status(500).json({ message: 'Failed to fetch next test', error: error.message });
   }
 });

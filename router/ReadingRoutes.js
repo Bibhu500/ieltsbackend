@@ -1,9 +1,15 @@
-//ReadingRoutes.js
 import express from "express";
-import { addReadingSet, getTestSet,getReadingResult,getNextTest, getSavedResults, getSharedResults } from "../controllers/ReadingController.js";
+import { 
+  addReadingSet, 
+  getTestSet, 
+  getReadingResult, 
+  getNextTest, 
+  getSavedResults, 
+  getSharedResults,
+  saveReadingResult,
+  getRemainingTests
+} from "../controllers/ReadingController.js";
 import { verifyToken } from "../middlewares/authMiddleware.js";
-import { saveReadingResult } from "../controllers/ReadingController.js";
-
 
 const router = express.Router();
 
@@ -14,7 +20,6 @@ router.route("/share/:shareId").get(getSharedResults);
 router.route("/saveresult").post(verifyToken, saveReadingResult);
 router.route("/result/:resultId").get(verifyToken, getReadingResult);
 router.route("/next-test").get(verifyToken, getNextTest);
-
-
+router.route("/remaining-tests").get(verifyToken, getRemainingTests); // Add this line
 
 export default router;

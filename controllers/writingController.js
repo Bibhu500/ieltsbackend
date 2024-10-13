@@ -13,6 +13,26 @@ const getWritingData = asyncHandler(async (req, res, next) => {
   try {
     console.log('Received request for writing type:', type);
 
+    // Check user's role
+    const user = await User.findOne({ firebaseId: req.user.uid });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Count the number of tests the user has taken for this type
+    const testCount = await Writing.countDocuments({
+      user_id: req.user.uid,
+      type: type,
+    });
+
+    // If the user is not a premium student and has already taken 2 tests
+    if (user.role !== "premiumstudent" && testCount >= 2) {
+      return res.status(403).json({ 
+        message: "You have reached the limit of free tests for this type. Please upgrade to premium for unlimited tests.",
+        limitReached: true
+      });
+    }
+
     const lastTest = await Writing.aggregate([
       {
         $match: {
@@ -49,13 +69,17 @@ const getWritingData = asyncHandler(async (req, res, next) => {
       }
 
       console.log('Found question:', writing);
-      res.status(200).json(writing);
+      res.status(200).json({
+        ...writing.toObject(),
+        remainingTests: user.role !== "premiumstudent" ? 2 - testCount : "unlimited"
+      });
     }
   } catch (e) {
     console.error('Error in getWritingData:', e);
     next(e);
   }    
 });
+
 
 const saveResults = asyncHandler(async (req, res, next) => {
   const { data } = req.body;
@@ -204,4 +228,18 @@ const addRemark = asyncHandler(async (req, res, next) => {
   }
 });
 
-export { saveResults, getSavedWritingResults, getSharedResults, getWritingData, addRemark };
+const getRemainingTests = asyncHandler(async (req, res) => {
+  const userId = req.user.uid;
+  
+  const generalCount = await Writing.countDocuments({ user_id: userId, type: 'General' });
+  const academicCount = await Writing.countDocuments({ user_id: userId, type: 'Academic' });
+  const essayCount = await Writing.countDocuments({ user_id: userId, type: 'essay' });
+
+  res.json({
+    General: Math.max(0, 2 - generalCount),
+    Academic: Math.max(0, 2 - academicCount),
+    essay: Math.max(0, 2 - essayCount)
+  });
+});
+
+export { saveResults, getSavedWritingResults, getSharedResults, getWritingData, addRemark ,getRemainingTests};
