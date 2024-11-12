@@ -18,6 +18,8 @@ import notificationRoutes from "./router/notificationRoutes.js";
 import morgan from "morgan";
 import errorHandler from "./middlewares/errorMiddleware.js";
 import helmet from "helmet";
+import journeyRoutes from "./router/journeyRoutes.js";
+
 
 dotenv.config();
 
@@ -36,6 +38,10 @@ app.use(helmet());
 app.get("/", (req, res) => {
   res.send(`Hello World`);
 });
+// server.js
+app.get("/api/journey/test", (req, res) => {
+  res.json({ message: "Journey routes working" });
+});
 app.use("/api/users", userRoutes);
 app.use("/api/speaking", speakingRoutes);
 app.use("/api/meme",meme)
@@ -49,6 +55,7 @@ app.use("/api/notification", notificationRoutes);
 app.use("/api/ielts-mocktest", notificationRoutes);
 app.use("/api/teacher", teacherRoutes);
 app.use("/api/organization", organizationRoutes);
+app.use("/api/journey", journeyRoutes);
 
 app.use(errorHandler);
 
