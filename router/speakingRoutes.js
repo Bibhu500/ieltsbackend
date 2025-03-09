@@ -4,8 +4,8 @@ import {
   getSavedSpeakingResults,
   getSharedResults,
   addRemark,
-  getSavedSpeakingResult
-} from "../controllers/speakingController.js"
+  getSavedSpeakingResult,
+} from "../controllers/speakingController.js";
 import { verifyToken } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
