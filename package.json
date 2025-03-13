@@ -1,6 +1,5 @@
 {
   "dependencies": {
-    "axios": "^1.7.9",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
@@ -16,14 +15,16 @@
     "react-router-dom": "^6.22.3",
     "uuid": "^9.0.1"
   },
+ 
   "scripts": {
     "start": "node index.js",
     "server": "node index.js",
-    "client": "npm run dev",
-    "dev": "nodemon index.js"
+    "client": "npm run dev"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
   },
   "type": "module"
 }
+
+
